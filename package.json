@@ -2,15 +2,23 @@
   "name": "@kamuridesu/kamuanimejs",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/main",
+  "main": "dist/main.js",
+  "author": "kamuridesu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kamuridesu/KanimeJs"
+  },
+  "bugs": {
+    "url": "https://github.com/kamuridesu/KanimeJs/issues"
+  },
+  "homepage": "https://github.com/kamuridesu/KanimeJs#readme",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --outDir dist --skipLibCheck",
     "start": "npm run build && node dist/main.js"
   },
   "keywords": [],
-  "author": "kamuridesu",
-  "license": "GPLv3",
   "type": "module",
   "dependencies": {
     "axios": "^1.6.0",
