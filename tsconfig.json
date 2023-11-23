@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "module": "es2022",
+        "target": "es2017",
+        "moduleResolution": "node",
+        "esModuleInterop": false,
+        "declaration": true,
+        "outDir": "modules",
+        "strict": true,
+    },
+    "include": ["src/**/*", "main.ts"],
+    "exclude": [
+        "node_modules",
+        "tools",
+        "dist",
+        "modules"
+    ],
+    "resolve": {
+        "extensions": [".ts", ".js", ".d.ts"]
+    }
+}
