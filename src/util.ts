@@ -39,3 +39,20 @@ function editDistance(s1: string, s2: string) {
     }
     return costs[s2.length];
 }
+
+export function replaceNonAscii(str: string): string {
+    const nonAsciiMap: { [key: string]: string } = {
+        '×': 'x',
+    };
+
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+        if (nonAsciiMap[str[i]]) {
+            result += nonAsciiMap[str[i]];
+        } else {
+            result += str[i];
+        }
+    }
+    return result;
+}
+

@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from "axios";
 import { SearchPageResult, getAllAnimeEpisodesInPage, getResultsPage } from "./parser.js";
 import { MyProxy } from "./config.js";
 import { SocksProxyAgent } from "socks-proxy-agent";
-import { similarity } from "./util.js";
+import { replaceNonAscii, similarity } from "./util.js";
 
 const headers = {
     'authority': 'www.hinatasoul.com',
@@ -115,7 +115,7 @@ export class Anime {
     }
 
     async searchAnimeSite(term: string) {
-        let anilistResult = (await this.search(term))[0].title.userPreferred;
+        let anilistResult = replaceNonAscii((await this.search(term))[0].title.userPreferred);
 
         let currentPage = 1;
         let animes: SearchPageResult[];
@@ -132,8 +132,11 @@ export class Anime {
 
             animes = getResultsPage(response.data);
 
+            console.log(animes)
+
             for (let anime of animes) {
                 const tempSim = similarity(term, anime.name!);
+                console.log(tempSim)
                 if (tempSim > mostSimilar.similarity) {
                     mostSimilar = {
                         anime: anime,
