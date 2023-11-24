@@ -1,5 +1,8 @@
 import axios, { AxiosResponse } from "axios";
-import { getAllAnimeEpisodesInPage } from "./parser.js";
+import { SearchPageResult, getAllAnimeEpisodesInPage, getResultsPage } from "./parser.js";
+import { MyProxy } from "./config.js";
+import { SocksProxyAgent } from "socks-proxy-agent";
+import { similarity } from "./util.js";
 
 const headers = {
     'authority': 'www.hinatasoul.com',
@@ -48,13 +51,18 @@ class NoEpisodesError extends Error {
     }
 }
 
-
 export class Anime {
     private endpoint = "https://www.hinatasoul.com";
     private downloadHost = "https://ikaros.anicdn.net";
     private searchEndpoint = 'https://graphql.anilist.co'
 
     async search(term: string) {
+        const proxy = process.env.PROXY_HOST != undefined ? MyProxy : false;
+        let agent;
+        if (proxy) {
+            const proxyUrl = `${proxy.protocol}://${proxy.auth.username}:${proxy.auth.password}@${proxy.host}:${proxy.port}`;
+            agent = new SocksProxyAgent(proxyUrl);
+        }
         const response = await axios.post(
             this.searchEndpoint,
             {
@@ -81,9 +89,10 @@ export class Anime {
                   }
                 }
               }`,
-                'variables': {
+                variables: {
                     'search': term
-                }
+                },
+                
             },
             {
                 headers: {
@@ -97,22 +106,55 @@ export class Anime {
                     'Sec-Fetch-Site': 'same-origin',
                     'DNT': '1',
                     'TE': 'trailers'
-                }
-            }
+                },
+                httpsAgent: agent
+            },
+
         );
         return response.data.data.anime.results as AnimeSearchResponse[];
     }
 
+    async searchAnimeSite(term: string) {
+        let anilistResult = (await this.search(term))[0].title.userPreferred;
+
+        let currentPage = 1;
+        let animes: SearchPageResult[];
+        let mostSimilar: {anime: SearchPageResult, similarity: number} = {
+            anime: {},
+            similarity: 0
+        };
+        do {
+            let pageUrl = `${this.endpoint}/busca?busca=${anilistResult}&page=${currentPage}`;
+
+            const response = await axios.get(pageUrl, {
+                headers: headers
+            });
+
+            animes = getResultsPage(response.data);
+
+            for (let anime of animes) {
+                const tempSim = similarity(term, anime.name!);
+                if (tempSim > mostSimilar.similarity) {
+                    mostSimilar = {
+                        anime: anime,
+                        similarity: tempSim
+                    }
+                }
+            }
+            currentPage++;
+        } while (animes.length > 0);
+        return mostSimilar.anime;
+    }
 
     async downloadAnime(title: string, episode: number) {
-        const parsedTitle = title.toLowerCase().replace(" ", "-");
+        const animeData = await this.searchAnimeSite(title);
         const page = Math.ceil(episode / 24);
 
-        const url = `${this.endpoint}/animes/${parsedTitle}/page/${page}`;
+        const url = `${animeData.href}/page/${page}`;
         const response = await axios.get(url, {
             headers: headers
         });
-        
+
         const episodes = await getAllAnimeEpisodesInPage(response.data);
         if (!episodes) {
             throw new NoEpisodesError();
@@ -121,8 +163,8 @@ export class Anime {
         if (!selectedEpisode) {
             throw new EpisodeNotFoundError();
         }
-        const downloadUrl = `${this.downloadHost}/appsd2/${selectedEpisode.href.split("/").slice(-1)}.mp4`
-        console.log(downloadUrl)
+
+        const downloadUrl = `${this.downloadHost}/appsd2/${selectedEpisode.href.split("/").slice(-1)}.mp4`;
         const downloadResponse = await axios.get(downloadUrl, {
             headers: {
                 "Accept": "*/*",
@@ -143,7 +185,10 @@ export class Anime {
         });
 
         if (downloadResponse.status == 200) {
-            return downloadResponse.data as ArrayBuffer;
+            return {
+                title: animeData.name,
+                data: downloadResponse.data as ArrayBuffer
+            }
         }
 
         throw new Error("Unknown error!");
