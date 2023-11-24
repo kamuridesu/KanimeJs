@@ -132,11 +132,8 @@ export class Anime {
 
             animes = getResultsPage(response.data);
 
-            console.log(animes)
-
             for (let anime of animes) {
                 const tempSim = similarity(term, anime.name!);
-                console.log(tempSim)
                 if (tempSim > mostSimilar.similarity) {
                     mostSimilar = {
                         anime: anime,
@@ -166,33 +163,47 @@ export class Anime {
         if (!selectedEpisode) {
             throw new EpisodeNotFoundError();
         }
-
-        const downloadUrl = `${this.downloadHost}/appsd2/${selectedEpisode.href.split("/").slice(-1)}.mp4`;
-        const downloadResponse = await axios.get(downloadUrl, {
-            headers: {
-                "Accept": "*/*",
-                "Accept-Language": "en;q=0.6",
-                "Connection": "keep-alive",
-                "Referer": "https://www.hinatasoul.com/",
-                "Sec-Fetch-Dest": "video",
-                "Sec-Fetch-Mode": "no-cors",
-                "Sec-Fetch-Site": "cross-site",
-                "Sec-GPC": "1",
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-                "dnt": "1",
-                "sec-ch-ua": '"Not/A)Brand";v="99", "Brave";v="115", "Chromium";v="115"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Linux"',
-            },
-            responseType: 'arraybuffer'
-        });
-
-        if (downloadResponse.status == 200) {
-            return {
-                title: animeData.name,
-                data: downloadResponse.data as ArrayBuffer
+        const qualities = [
+            "appsd2",
+            "appsd"
+        ]
+        for (let i = 0; i < 2; i++) {
+            try {
+                const downloadUrl = `${this.downloadHost}/${qualities[i]}/${selectedEpisode.href.split("/").slice(-1)}.mp4`;
+                const downloadResponse = await axios.get(downloadUrl, {
+                    headers: {
+                        "Accept": "*/*",
+                        "Accept-Language": "en;q=0.6",
+                        "Connection": "keep-alive",
+                        "Referer": "https://www.hinatasoul.com/",
+                        "Sec-Fetch-Dest": "video",
+                        "Sec-Fetch-Mode": "no-cors",
+                        "Sec-Fetch-Site": "cross-site",
+                        "Sec-GPC": "1",
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+                        "dnt": "1",
+                        "sec-ch-ua": '"Not/A)Brand";v="99", "Brave";v="115", "Chromium";v="115"',
+                        "sec-ch-ua-mobile": "?0",
+                        "sec-ch-ua-platform": '"Linux"',
+                    },
+                    responseType: 'arraybuffer'
+                });
+        
+                if (downloadResponse.status == 200) {
+                    return {
+                        title: animeData.name,
+                        data: downloadResponse.data as ArrayBuffer
+                    }
+                }
+            } catch (e: any) {
+                if (e.response.status != 404) {
+                    console.log(e)
+                    throw new Error("Unknown error");
+                }
             }
         }
+        
+        
 
         throw new Error("Unknown error!");
     }
