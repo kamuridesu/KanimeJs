@@ -53,7 +53,7 @@ class NoEpisodesError extends Error {
 
 export class Anime {
     private endpoint = "https://www.hinatasoul.com";
-    private downloadHost = "https://ikaros.anicdn.net";
+    private downloadHost = "https://cdn8.anicdn.net";
     private searchEndpoint = 'https://graphql.anilist.co'
 
     async search(term: string) {
@@ -200,10 +200,9 @@ export class Anime {
                     console.log(e)
                     throw new Error("Unknown error");
                 }
+                console.log(e);
             }
         }
-        
-        
 
         throw new Error("Unknown error!");
     }
