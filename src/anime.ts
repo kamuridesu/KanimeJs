@@ -34,6 +34,7 @@ interface AnimeSearchResponse {
     format: string;
     bannerImage: string;
     isLicensed: boolean;
+    popularity: number;
     startDate: {
         year: number;
     };
@@ -83,6 +84,7 @@ export class Anime {
                     format
                     bannerImage
                     isLicensed
+                    popularity
                     startDate {
                       year
                     }
@@ -114,8 +116,19 @@ export class Anime {
         return response.data.data.anime.results as AnimeSearchResponse[];
     }
 
+    sortMostPopular(anilistResultArray: AnimeSearchResponse[]) {
+        let mostPopular: AnimeSearchResponse = anilistResultArray[0];
+        for (let anime of anilistResultArray) {
+            if (anime.popularity > mostPopular.popularity) {
+                mostPopular = anime;
+            }
+        }
+        return mostPopular;
+    }
+
     async searchAnimeSite(term: string) {
-        let anilistResult = replaceNonAscii((await this.search(term))[0].title.userPreferred);
+        const anilistResultArray = (await this.search(term));
+        let anilistResult = replaceNonAscii(this.sortMostPopular(anilistResultArray).title.userPreferred);
 
         let currentPage = 1;
         let animes: SearchPageResult[];
@@ -124,12 +137,16 @@ export class Anime {
             similarity: 0
         };
         do {
-            let pageUrl = `${this.endpoint}/busca?busca=${anilistResult}&page=${currentPage}`;
-
-            const response = await axios.get(pageUrl, {
-                headers: headers
-            });
-
+            const pageUrl = `${this.endpoint}/busca?busca=${anilistResult}&page=${currentPage}`;
+            let response: AxiosResponse<any, any>;
+            try {
+                response = await axios.get(pageUrl, {
+                    headers: headers
+                });
+            } catch(e) {
+                process.exit(1);
+            }
+           
             animes = getResultsPage(response.data);
 
             for (let anime of animes) {
@@ -148,6 +165,9 @@ export class Anime {
 
     async downloadAnime(title: string, episode: number) {
         const animeData = await this.searchAnimeSite(title);
+        if (animeData.href == undefined) {
+            throw new Error("Anime not found!");
+        }
         const page = Math.ceil(episode / 24);
 
         const url = `${animeData.href}/page/${page}`;
@@ -201,6 +221,7 @@ export class Anime {
                     throw new Error("Unknown error");
                 }
                 console.log(e);
+                throw new Error("Anime not found");
             }
         }
 
