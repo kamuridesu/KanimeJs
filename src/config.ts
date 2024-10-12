@@ -19,3 +19,18 @@ export const MyProxy: CustomProxy = {
       password: process.env.PROXY_PASS!
     }
 }
+
+
+type TelegramAuthInfo = {
+    apiId: number;
+    apiHash: string;
+    stringSession?: string;
+    chatId: string;
+}
+
+export const TelegramAuth: TelegramAuthInfo = {
+    apiId: parseInt(process.env.API_ID ? process.env.API_ID : "0"),
+    apiHash: process.env.API_HASH ? process.env.API_HASH : "",
+    stringSession: process.env.STRING_SESSION ? process.env.STRING_SESSION : "",
+    chatId: process.env.CHAT_ID ? process.env.CHAT_ID : "",
+}
