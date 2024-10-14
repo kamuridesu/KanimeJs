@@ -56,3 +56,18 @@ export function replaceNonAscii(str: string): string {
     return result;
 }
 
+export function getTemporadaIfPresent(text: string) {
+    let temporada = "";
+    for (const line of text.toLowerCase().split("\n")) {
+        if (line.includes("temporada") && line.length < 20) {
+            const match = line.split("temporada")
+            .find(s => s.search(/\d+/))
+            ?.match(/\d+/);
+            if (match) {
+                temporada = match[0];
+                break;
+            }
+        }
+    }
+    return temporada;
+}

@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from "axios";
 import { MyProxy } from "./config.js";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { replaceNonAscii, similarity } from "./util.js";
+import { Telegram } from "./telegram.js";
 
 interface AnimeSearchResponse {
     id: number;
@@ -21,20 +22,35 @@ interface AnimeSearchResponse {
     };
 }
 
+type AnimeDownloadInfo = {
+    title: string;
+    data: string | Buffer;
+    number: number;
+}
+
 class EpisodeNotFoundError extends Error {
     constructor(message: string = "Episode not found!") {
         super(message);
     }
 }
 
-class NoEpisodesError extends Error {
-    constructor(message: string = "No episodes found!") {
-        super(message);
-    }
-}
-
 export class Anime {
     private searchEndpoint = 'https://graphql.anilist.co'
+    private tgClient: Telegram;
+
+    constructor(tg: Telegram) {
+        this.tgClient = tg;
+    }
+
+    async init() {
+        await this.tgClient.init();
+        await this.tgClient.loadExistingFileTree();
+        return this;
+    }
+
+    async close() {
+        await this.tgClient.close();
+    }
 
     async search(term: string) {
         const proxy = process.env.PROXY_HOST != undefined ? MyProxy : false;
@@ -92,7 +108,8 @@ export class Anime {
             },
 
         );
-        return response.data.data.anime.results as AnimeSearchResponse[];
+        const data: AnimeSearchResponse[] = response.data.data.anime.results;
+        return replaceNonAscii(this.sortMostPopular(data).title.userPreferred);
     }
 
     sortMostPopular(anilistResultArray: AnimeSearchResponse[]) {
@@ -105,14 +122,33 @@ export class Anime {
         return mostPopular;
     }
 
-    async searchAnimeSite(term: string) {
-        const anilistResultArray = (await this.search(term));
-        let anilistResult = replaceNonAscii(this.sortMostPopular(anilistResultArray).title.userPreferred);
+    async searchAnime(term: string) {
+        const anilistResult = (await this.search(term));
+        const telegramResults = this.tgClient.animes;
 
-        
+        let mostSimilar = telegramResults[0];
+        let maxSimilarity = 0;
+        for (const anime of telegramResults) {
+            const sim = similarity(anime.title, anilistResult);
+            if (sim > maxSimilarity) {
+                mostSimilar = anime;
+                maxSimilarity = sim
+            }
+        }
+        return mostSimilar;
     }
 
-    async downloadAnime(title: string, episode: number) {
-
+    async download(title: string, episode: number): Promise<AnimeDownloadInfo> {
+        const actualEpisode = episode - 1;
+        const anime = await this.searchAnime(title);
+        if (actualEpisode > anime.episodes.length) throw new EpisodeNotFoundError();
+        const selectedEpisode = anime.episodes[actualEpisode];
+        if (selectedEpisode == undefined) throw new EpisodeNotFoundError();
+        const data = await this.tgClient.download(selectedEpisode.id);
+        return {
+            title: selectedEpisode.name,
+            data: data,
+            number: episode + 1
+        }
     }
 }

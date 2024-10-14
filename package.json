@@ -1,6 +1,6 @@
 {
   "name": "@kamuridesu/kamuanimejs",
-  "version": "1.0.7",
+  "version": "2.0.0",
   "description": "",
   "main": "dist/main.js",
   "author": "kamuridesu",
@@ -21,9 +21,7 @@
   "keywords": [],
   "type": "module",
   "dependencies": {
-    "@kamuridesu/kamuanimejs": "file:",
     "axios": "^1.7.7",
-    "node-html-parser": "^6.1.11",
     "socks-proxy-agent": "^8.0.2",
     "telegram": "^2.25.15"
   },
