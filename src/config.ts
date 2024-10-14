@@ -1,3 +1,22 @@
+import { existsSync, readFileSync } from "fs";
+
+function loadDotEnv() {
+    if (!existsSync(".env")) return;
+    const content = readFileSync(".env").toString();
+    for (const line of content.split("\n")) {
+        if (line.startsWith("#")) continue;
+        const data = line.split("=");
+        const key = data[0].trim();
+        let value = data.slice(1).join("=").trim();
+        if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.slice(1, -1);
+        }
+        process.env[key] = value;
+    }
+}
+
+loadDotEnv();
+
 type ProxyAuth = {
     username: string;
     password: string;

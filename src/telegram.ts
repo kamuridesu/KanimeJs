@@ -15,7 +15,14 @@ const NAMES = [
     "Nome: ",
     "Anime: ",
     "**Anime:**",
-    "**Nome:**"
+    "**Nome:**",
+    "**Anime: **",
+    "**Nome: **",
+    "◈Nome:",
+    "**Anim**e: ",
+    "Filme: ",
+    "**Filme**: ",
+    "**Filme:** "
 ]
 
 export class Telegram {
@@ -36,21 +43,27 @@ export class Telegram {
         let animeInfo: FileTree = { "title": "", episodes_ids: [] }
         for (const message of messages) {
 
+            let isTitleFound = false;
+
+            if (message.text.includes("Kami Kuzu")) {
+
+            }
+
             for (const name of NAMES) {
+
                 if (message.text.includes(name.trim())) {
                     const text = message.text.trim();
-                    console.log(text.split("\n"));
-                    console.log(text.split("\n")[0].split(name));
-                    
-                    const uTitle = text.split("\n").filter(s => s != "").filter(s => s.includes(name));
-                    console.log(uTitle);
-                    if (!uTitle) throw new Error("Title not parsed");
+                    const uTitle = text.split("\n").filter(s => s != "").filter(s => s.trim().startsWith(name.trim()));
+                    if (uTitle.length < 1) continue;
                     const title = uTitle[0].split(name)[1].trim();
                     console.log("Title: " + title);
                     animeInfo["title"] = title;
+                    isTitleFound = true;
                     break;
                 }
             }
+
+            if (isTitleFound) continue;
 
             if (message.media != undefined && message.sticker != undefined) {
                 allAnimes.push(animeInfo);
